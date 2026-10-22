@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arcade Parts Compatibility</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#1b2a49; --paper:#f3f5f8; --red:#d7263d; --gold:#f2b705; --ok:#17803d; --no:#b42318; }
+  body { background:var(--paper); color:var(--ink); }
+  h1,h2,h3,.brand { font-family:'Chakra Petch',system-ui,sans-serif; }
+  .hero { background:var(--ink); color:#fff; border-bottom:6px solid var(--red); }
+  .hero p { color:#c9d3e6; max-width:60ch; }
+  .search-wrap .form-control { border:3px solid var(--ink); border-radius:.5rem; }
+  .search-wrap .form-control:focus { border-color:var(--red); box-shadow:0 0 0 .25rem rgba(215,38,61,.2); }
+  .panel { background:#fff; border:2px solid var(--ink); border-radius:.5rem; }
+  .panel h2 { font-size:1.25rem; }
+  .table > :not(caption) > * > * { vertical-align:middle; }
+  .table thead th { background:var(--ink); color:#fff; font-weight:600; white-space:nowrap; }
+  .chip { display:inline-block; padding:.15rem .55rem; border-radius:1rem; font-size:.8rem; font-weight:600; background:#e5eaf3; }
+  .chip.sanwa { background:#fde7ea; color:#8f1626; }
+  .chip.happ { background:#fff3cc; color:#6b5200; }
+  .chip.none { background:#e8e8e8; color:#555; }
+  .cell-yes { background:#e3f4e9; color:var(--ok); font-weight:700; text-align:center; }
+  .cell-no { background:#fbe9e7; color:var(--no); font-weight:700; text-align:center; }
+  .cell-na { background:#eee; color:#777; text-align:center; }
+  .matrix th.rot { font-size:.8rem; min-width:7rem; text-align:center; }
+  .result { border-left:8px solid var(--gold); }
+  .result.yes { border-left-color:var(--ok); }
+  .result.no { border-left-color:var(--no); }
+  :focus-visible { outline:3px solid var(--gold); outline-offset:2px; }
+</style>
+</head>
+<body>
+
+<header class="hero py-5">
+  <div class="container">
+    <h1 class="display-5 fw-bold">Arcade Parts Compatibility</h1>
+    <p class="lead mb-0">Find out which levers fit which arcade sticks before you buy. Search by name, brand, or mounting pattern.</p>
+  </div>
+</header>
+
+<main class="container py-4">
+
+  <div class="search-wrap mb-4">
+    <label for="search" class="form-label fw-semibold">Search sticks and levers</label>
+    <input id="search" type="search" class="form-control form-control-lg" placeholder="Try: Sanwa, Hori, Seimitsu, Happ, leverless" autocomplete="off">
+    <div class="form-text" id="count"></div>
+    <div id="status" class="alert alert-secondary py-2 mt-2 mb-0 small" role="status">Loading parts from the database...</div>
+  </div>
+
+  <section class="panel p-3 mb-4" aria-labelledby="checker">
+    <h2 id="checker" class="mb-3">Check a pair</h2>
+    <div class="row g-3 align-items-end">
+      <div class="col-md-5">
+        <label for="pickStick" class="form-label">Arcade stick</label>
+        <select id="pickStick" class="form-select"></select>
+      </div>
+      <div class="col-md-5">
+        <label for="pickLever" class="form-label">Lever</label>
+        <select id="pickLever" class="form-select"></select>
+      </div>
+    </div>
+    <div id="result" class="result mt-3 p-3 bg-light rounded" aria-live="polite"></div>
+  </section>
+
+  <div class="row g-4 mb-4">
+    <div class="col-xl-7">
+      <section class="panel p-3 h-100" aria-labelledby="sticksH">
+        <h2 id="sticksH">Arcade sticks</h2>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead><tr><th>Stick</th><th>Brand</th><th>Platforms</th><th>Lever mount</th><th>Swap lever?</th><th class="text-end">Approx. USD</th></tr></thead>
+            <tbody id="sticksBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+    <div class="col-xl-5">
+      <section class="panel p-3 h-100" aria-labelledby="leversH">
+        <h2 id="leversH">Levers</h2>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead><tr><th>Lever</th><th>Brand</th><th>Gate</th><th>Mount</th><th class="text-end">Approx. USD</th></tr></thead>
+            <tbody id="leversBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel p-3 mb-4" aria-labelledby="matrixH">
+    <h2 id="matrixH">Compatibility matrix</h2>
+    <p class="mb-2 small">
+      <span class="badge text-bg-success">Fits</span> same mounting pattern &nbsp;
+      <span class="badge text-bg-danger">No fit</span> different mounting pattern &nbsp;
+      <span class="badge text-bg-secondary">N/A</span> stick has no lever to replace
+    </p>
+    <div class="table-responsive">
+      <table class="table table-bordered matrix mb-0">
+        <thead id="matrixHead"></thead>
+        <tbody id="matrixBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="small text-secondary">
+    Sample data for demonstration. Prices are rough estimates, and manufacturers change specs between revisions, so confirm the mounting pattern and lever type on the maker's product page before buying.
+    Lever fit here is based on mounting pattern only; some swaps also need a different dust washer, shaft, or cutout plate.
+  </p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+/* ---- Database connection ----
+   Paste your Supabase Project URL and public (anon / publishable) key here.
+   Find them in Supabase > Project Settings > API. Never paste the secret / service_role key. */
+const SUPABASE_URL = "PASTE_YOUR_PROJECT_URL_HERE";
+const SUPABASE_KEY = "PASTE_YOUR_PUBLIC_KEY_HERE";
+
+/* ---- Sample data (used only if the database is not set up or cannot be reached) ---- */
+let sticks = [
+  { name:"Hori Real Arcade Pro V Hayabusa", brand:"Hori",    platforms:"PS4/PS5/PC",     mount:"Sanwa", swap:true,  price:200 },
+  { name:"Qanba Drone 2",                   brand:"Qanba",   platforms:"PS4/PS5/PC",     mount:"Sanwa", swap:true,  price:200 },
+  { name:"Victrix Pro FS",                  brand:"Victrix", platforms:"PS5/PS4/PC",     mount:"Sanwa", swap:true,  price:200 },
+  { name:"Razer Panthera Evo",              brand:"Razer",   platforms:"PS4/PS5/PC",     mount:"Sanwa", swap:true,  price:190 },
+  { name:"Mayflash F500",                   brand:"Mayflash",platforms:"PS/Switch/PC",   mount:"Sanwa", swap:true,  price:110 },
+  { name:"Happ-style Cabinet Panel Kit",    brand:"Generic", platforms:"PC/Arcade cab",  mount:"Happ",  swap:true,  price:60  },
+  { name:"Hit Box (leverless)",             brand:"Hit Box", platforms:"PS/Switch/PC",   mount:"None",  swap:false, price:150 }
+];
+let levers = [
+  { name:"Sanwa JLF-TP-8YT",    brand:"Sanwa",    gate:"Square",     mount:"Sanwa", price:25 },
+  { name:"Sanwa JLF-TP-8YT-SK", brand:"Sanwa",    gate:"Square (silent)", mount:"Sanwa", price:30 },
+  { name:"Seimitsu LS-32-01",   brand:"Seimitsu", gate:"Octagonal",  mount:"Sanwa", price:28 },
+  { name:"Seimitsu LS-40-01",   brand:"Seimitsu", gate:"Octagonal",  mount:"Sanwa", price:30 },
+  { name:"Hori Hayabusa",       brand:"Hori",     gate:"Square",     mount:"Sanwa", price:25 },
+  { name:"Happ Competition",    brand:"Happ",     gate:"Square",     mount:"Happ",  price:20 }
+];
+
+/* ---- Helpers ---- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const chip = m => `<span class="chip ${m.toLowerCase()}">${esc(m === 'None' ? 'No lever' : m + ' pattern')}</span>`;
+const has = (obj, q) => Object.values(obj).join(' ').toLowerCase().includes(q) ||
+                        (obj.swap === false && 'leverless'.includes(q) && q.length > 2);
+
+function compat(s, l) {
+  if (!s.swap) return 'na';
+  return s.mount === l.mount ? 'yes' : 'no';
+}
+
+/* ---- Render ---- */
+function render() {
+  const q = $('search').value.trim().toLowerCase();
+  const ms = sticks.filter(s => !q || has(s, q));
+  const ml = levers.filter(l => !q || has(l, q));
+
+  $('sticksBody').innerHTML = ms.length ? ms.map(s => `
+    <tr><td class="fw-semibold">${esc(s.name)}</td><td>${esc(s.brand)}</td><td>${esc(s.platforms)}</td>
+    <td>${chip(s.mount)}</td><td>${s.swap ? 'Yes' : 'No'}</td><td class="text-end">$${s.price}</td></tr>`).join('')
+    : `<tr><td colspan="6" class="text-secondary">No sticks match "${esc(q)}". Try a brand or a mounting pattern.</td></tr>`;
+
+  $('leversBody').innerHTML = ml.length ? ml.map(l => `
+    <tr><td class="fw-semibold">${esc(l.name)}</td><td>${esc(l.brand)}</td><td>${esc(l.gate)}</td>
+    <td>${chip(l.mount)}</td><td class="text-end">$${l.price}</td></tr>`).join('')
+    : `<tr><td colspan="5" class="text-secondary">No levers match "${esc(q)}". Try a brand or a mounting pattern.</td></tr>`;
+
+  /* Matrix: if the search matches only sticks, show all levers (and the reverse). */
+  const rows = ms.length ? ms : (ml.length ? sticks : []);
+  const cols = ml.length ? ml : (ms.length ? levers : []);
+  $('matrixHead').innerHTML = rows.length
+    ? `<tr><th>Stick \\ Lever</th>${cols.map(l => `<th class="rot">${esc(l.name)}</th>`).join('')}</tr>` : '';
+  $('matrixBody').innerHTML = rows.length ? rows.map(s => `
+    <tr><th scope="row" class="fw-semibold">${esc(s.name)}</th>${cols.map(l => {
+      const c = compat(s, l);
+      return c === 'yes' ? '<td class="cell-yes" title="Fits">&#10003; Fits</td>'
+           : c === 'no'  ? '<td class="cell-no" title="No fit">&#10007; No fit</td>'
+           : '<td class="cell-na" title="No lever to replace">N/A</td>';
+    }).join('')}</tr>`).join('')
+    : `<tr><td class="text-secondary">Nothing to compare yet. Clear the search to see every pair.</td></tr>`;
+
+  $('count').textContent = `${ms.length} of ${sticks.length} sticks, ${ml.length} of ${levers.length} levers`;
+}
+
+/* ---- Pair checker ---- */
+function fillSelects() {
+  $('pickStick').innerHTML = sticks.map((s, i) => `<option value="${i}">${esc(s.name)}</option>`).join('');
+  $('pickLever').innerHTML = levers.map((l, i) => `<option value="${i}">${esc(l.name)}</option>`).join('');
+}
+function check() {
+  const s = sticks[$('pickStick').value], l = levers[$('pickLever').value];
+  const c = compat(s, l), box = $('result');
+  box.className = 'result mt-3 p-3 bg-light rounded ' + (c === 'yes' ? 'yes' : c === 'no' ? 'no' : '');
+  box.innerHTML = c === 'yes'
+    ? `<strong>Fits.</strong> The ${esc(l.name)} uses the ${esc(l.mount)} mounting pattern, which matches the ${esc(s.name)}.`
+    : c === 'no'
+    ? `<strong>Does not fit.</strong> The ${esc(s.name)} uses the ${esc(s.mount)} pattern, but the ${esc(l.name)} uses the ${esc(l.mount)} pattern.`
+    : `<strong>Not applicable.</strong> The ${esc(s.name)} has no lever. It uses buttons only.`;
+}
+
+$('search').addEventListener('input', render);
+$('pickStick').addEventListener('change', check);
+$('pickLever').addEventListener('change', check);
+/* ---- Load from the database ---- */
+function setStatus(kind, msg) {
+  const el = $('status');
+  el.className = 'alert alert-' + kind + ' py-2 mt-2 mb-0 small';
+  el.textContent = msg;
+}
+async function loadData() {
+  if (SUPABASE_URL.startsWith('PASTE') || SUPABASE_KEY.startsWith('PASTE')) {
+    setStatus('warning', 'Database not connected yet. Showing sample data. Add your Supabase URL and key in the script.');
+    return;
+  }
+  try {
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const [a, b] = await Promise.all([
+      db.from('sticks').select('*').order('name'),
+      db.from('levers').select('*').order('name')
+    ]);
+    if (a.error) throw a.error;
+    if (b.error) throw b.error;
+    sticks = a.data.map(r => ({ name:r.name, brand:r.brand, platforms:r.platforms || '', mount:r.mount,
+                                swap:r.swappable, price:r.price_usd == null ? '-' : Number(r.price_usd) }));
+    levers = b.data.map(r => ({ name:r.name, brand:r.brand, gate:r.gate || '', mount:r.mount,
+                                price:r.price_usd == null ? '-' : Number(r.price_usd) }));
+    setStatus('success', `Live data: ${sticks.length} sticks and ${levers.length} levers loaded from the database.`);
+  } catch (err) {
+    console.error(err);
+    setStatus('danger', 'Could not reach the database (it may be paused or the keys are wrong). Showing sample data.');
+  }
+}
+fillSelects(); render(); check();
+loadData().then(() => { fillSelects(); render(); check(); });
+</script>
+</body>
+</html>
