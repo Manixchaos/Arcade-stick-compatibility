@@ -1,0 +1,1 @@
+# Arcade-stick-compatibility
